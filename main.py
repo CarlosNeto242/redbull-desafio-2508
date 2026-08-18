@@ -1,3 +1,4 @@
+import typing_extensions
 import pygame
 import sys
 import random
@@ -154,10 +155,6 @@ def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
         # Detalhe de brilho no bloco
         brilho = (min(255, cor_fill[0]+60), min(255, cor_fill[1]+60), min(255, cor_fill[2]+60))
         pygame.draw.rect(tela, brilho, (bx, by, bw, 2))
-
-    # Texto centralizado
-    txt_lbl = fonte.render(f"ENERGIA {int(pct * 100)}%", True, (255, 255, 255))
-    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + bar_height//2 - txt_lbl.get_height() + 50//2))
 
 def main():
     pygame.init()
@@ -479,11 +476,15 @@ def main():
             # HUD Topo
             desenhar_barra_energia(tela, energia, config.MAX_ENERGY, fonte_pequena)
 
-            txt_cronometro = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", True, (255, 220, 100))
-            tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
+            # Renderiza sem antialiasing e escala em 2x para dar a mesma cara de pixel art
+            txt_crono_base = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", False, (255, 220, 100))
+            tela.blit(txt_crono_base, (LARGURA - txt_crono_base.get_width() - 15, 37))
 
             if touro.voando and frase_voo_atual:
-                txt_voo = fonte_grande.render(frase_voo_atual, True, (0, 220, 255))
+                # Renderiza sem antialiasing (False) para ficar serrilhado, e em vermelho
+                txt_voo_base = fonte_media.render(frase_voo_atual, False, (255, 40, 40))
+                # Escala em 2x sem suavização para dar o efeito "pixel art"
+                txt_voo = pygame.transform.scale(txt_voo_base, (txt_voo_base.get_width() * 2, txt_voo_base.get_height() * 2))
                 tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 400))
 
         # ----------------------------------------------------
