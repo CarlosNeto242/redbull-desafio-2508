@@ -86,33 +86,56 @@ def gerar_nivel():
     return plataformas, itens
 
 def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
-    """Desenha a barra de energia no topo da tela."""
-    bar_width = config.WIDTH
-    bar_height = 18
-    x = config.WIDTH // 2 - bar_width // 2
+    """Desenha a barra de energia no estilo Pixel Retrô."""
+    bar_width = config.WIDTH - 40
+    bar_height = 24
+    x = 20
     y = 12
 
     pct = max(0.0, min(1.0, energia_atual / max_energia))
-    fill_width = int(bar_width * pct)
-
+    
+    # Cores
+    cor_borda_clara = (200, 200, 255)
+    cor_borda_escura = (30, 40, 80)
+    cor_fundo = (5, 10, 25)
+    
     if pct > 0.5:
-        cor_fill = (0, 150, 255)
+        cor_fill = (0, 180, 255) # Cyan Retro
     elif pct > 0.25:
         cor_fill = (255, 190, 0)
     else:
         cor_fill = (230, 30, 30)
 
-    fundo_rect = pygame.Rect(x, y, bar_width, bar_height)
-    pygame.draw.rect(tela, config.ENERGY_BAR_BG, fundo_rect, border_radius=6)
+    # 1. Borda Pixelada Externa
+    pygame.draw.rect(tela, cor_borda_escura, (x+2, y, bar_width-4, bar_height))
+    pygame.draw.rect(tela, cor_borda_escura, (x, y+2, bar_width, bar_height-4))
     
-    if fill_width > 0:
-        fill_rect = pygame.Rect(x, y, fill_width, bar_height)
-        pygame.draw.rect(tela, cor_fill, fill_rect, border_radius=6)
+    # 2. Borda Interna (1 pixel de espessura)
+    pygame.draw.rect(tela, cor_borda_clara, (x+4, y+2, bar_width-8, bar_height-4))
+    pygame.draw.rect(tela, cor_borda_clara, (x+2, y+4, bar_width-4, bar_height-8))
+    
+    # 3. Fundo Escuro
+    pygame.draw.rect(tela, cor_fundo, (x+4, y+4, bar_width-8, bar_height-8))
 
-    pygame.draw.rect(tela, (255, 255, 255), fundo_rect, width=2, border_radius=6)
+    # 4. Blocos de Preenchimento (Estilo Pixel)
+    blocos_totais = 25
+    blocos_ativos = int(blocos_totais * pct)
+    largura_bloco = (bar_width - 12) / blocos_totais
+    
+    for i in range(blocos_ativos):
+        bx = x + 6 + i * largura_bloco
+        by = y + 6
+        bw = largura_bloco - 2 # Gap entre os pixels
+        bh = bar_height - 12
+        pygame.draw.rect(tela, cor_fill, (bx, by, bw, bh))
+        
+        # Detalhe de brilho no bloco
+        brilho = (min(255, cor_fill[0]+60), min(255, cor_fill[1]+60), min(255, cor_fill[2]+60))
+        pygame.draw.rect(tela, brilho, (bx, by, bw, 2))
 
+    # Texto centralizado
     txt_lbl = fonte.render(f"ENERGIA {int(pct * 100)}%", True, (255, 255, 255))
-    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + 1))
+    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + bar_height//2 - txt_lbl.get_height() + 50//2))
 
 def main():
     pygame.init()
@@ -148,6 +171,7 @@ def main():
     motivo_game_over = ""
     ranking_top5 = []
     bg_y_offset = 0.0
+    frase_voo_atual = ""
 
     # Botões Touch (Rodapé da tela durante o jogo)
     btn_altura = 90
@@ -176,6 +200,8 @@ def main():
 
     def iniciar_nova_partida():
         nonlocal touro, plataformas, itens, energia, tempo_jogo, altura_maxima_alcancada, bg_y_offset, estado_atual
+        nonlocal tecla_esq_pressionada, tecla_dir_pressionada, touch_esq_pressionado, touch_dir_pressionado
+        nonlocal frase_voo_atual
         touro = Touro(LARGURA // 2 - 32, ALTURA - 160)
         touro.vx = 0
         touro.vy = 0
@@ -184,6 +210,7 @@ def main():
         tempo_jogo = 0.0
         altura_maxima_alcancada = 0
         bg_y_offset = 0.0
+        frase_voo_atual = ""
         tecla_esq_pressionada = False
         tecla_dir_pressionada = False
         touch_esq_pressionado = False
@@ -335,6 +362,8 @@ def main():
             for item in coletados:
                 energia = min(config.MAX_ENERGY, energia + config.ENERGY_REFILL)
                 touro.ativar_voo()
+                voo_frases = ["ISSO NINGUÉM FAZ", "PULO E OUSADIA", "NÃO PARA DE SURPREENDER", "MENTE E CORPO SINCRONIZADA"]
+                frase_voo_atual = random.choice(voo_frases)
 
             # Queda
             if touro.rect.top > ALTURA:
@@ -399,8 +428,8 @@ def main():
             txt_cronometro = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", True, (255, 220, 100))
             tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
 
-            if touro.voando:
-                txt_voo = fonte_grande.render("⚡ VOO RED BULL! ⚡", True, (0, 220, 255))
+            if touro.voando and frase_voo_atual:
+                txt_voo = fonte_grande.render(frase_voo_atual, True, (0, 220, 255))
                 tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 400))
 
         # ----------------------------------------------------
