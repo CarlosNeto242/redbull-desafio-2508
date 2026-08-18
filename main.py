@@ -1,4 +1,3 @@
-import typing_extensions
 import pygame
 import sys
 import random
@@ -14,6 +13,15 @@ ESTADO_NOME = 0
 ESTADO_JOGANDO = 1
 ESTADO_GAMEOVER = 2
 ESTADO_VITORIA = 3
+
+# Nomes genéricos usados automaticamente para identificar cada jogador.
+NOMES_GENERICOS = [
+    "Blue", "Red", "Green", "Gold", "Silver",
+    "Indigo", "Cyan", "Amber", "Violet", "Coral",
+    "Onyx", "Jade", "Ruby", "Sage", "Azure",
+    "Ivory", "Teal", "Crimson", "Aqua", "Gray",
+]
+
 
 def carregar_sky():
     caminho0 = os.path.join("assets", "sky", "sky0.png")
@@ -186,8 +194,8 @@ def main():
 
     # Estado Inicial
     estado_atual = ESTADO_NOME
-    nome_input = ""
-    cursor_visivel = True
+    nome_input = random.choice(NOMES_GENERICOS)
+    cursor_visivel = False
     cursor_timer = 0.0
 
     # Dados da partida
@@ -219,8 +227,9 @@ def main():
             sx = sy = 1.0
         return pygame.Rect(int(x * sx), int(y * sy), int(w * sx), int(h * sy))
 
-    box_nome_rect = area_tela_inicial(314, 694, 418, 128)
-    btn_iniciar_rect = area_tela_inicial(311, 854, 424, 126)
+    # A nova arte nao possui mais campo de nome.
+    # Apenas o botao INICIAR e interativo.
+    btn_iniciar_rect = area_tela_inicial(311, 785, 424, 125)
 
     # Áreas clicáveis da tela de vitória (base 1024x1536).
     def area_tela_vitoria(x, y, w, h):
@@ -269,18 +278,10 @@ def main():
             if evento.type == pygame.QUIT:
                 rodando = False
 
-            # --- ESTADO 1: ENTRADA DE NOME ---
+            # --- ESTADO 1: TELA INICIAL ---
             if estado_atual == ESTADO_NOME:
-                if evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_RETURN:
-                        if nome_input.strip():
-                            iniciar_nova_partida()
-                    elif evento.key == pygame.K_BACKSPACE:
-                        nome_input = nome_input[:-1]
-                    else:
-                        if len(nome_input) < 12 and evento.unicode.isprintable():
-                            nome_input += evento.unicode
-
+                if evento.type == pygame.KEYDOWN and evento.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    iniciar_nova_partida()
                 elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
                     if hasattr(evento, 'pos'):
                         pos_x, pos_y = evento.pos
@@ -288,16 +289,12 @@ def main():
                         pos_x = int(evento.x * LARGURA)
                         pos_y = int(evento.y * ALTURA)
 
-                    if box_nome_rect.collidepoint(pos_x, pos_y):
-                        # Mantém o foco visual no campo; a digitação continua por KEYDOWN.
-                        cursor_visivel = True
-                        cursor_timer = 0.0
-                    elif btn_iniciar_rect.collidepoint(pos_x, pos_y):
-                        if not nome_input.strip():
-                            nome_input = "Piloto"
+                    # Qualquer toque no botao INICIAR comeca a partida.
+                    if btn_iniciar_rect.collidepoint(pos_x, pos_y):
                         iniciar_nova_partida()
 
             # --- ESTADO 2: JOGANDO ---
+
             elif estado_atual == ESTADO_JOGANDO:
                 if evento.type == pygame.KEYDOWN:
                     if evento.key in (pygame.K_LEFT, pygame.K_a):
@@ -327,14 +324,15 @@ def main():
                     touch_esq_pressionado = False
                     touch_dir_pressionado = False
 
-            # --- ESTADO 3 & 4: GAME OVER OU VITÓRIA ---
+            # --- ESTADO 3 & 4: GAME OVER OU VITORIA ---
             elif estado_atual in (ESTADO_GAMEOVER, ESTADO_VITORIA):
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_r:
                         iniciar_nova_partida()
                     elif evento.key == pygame.K_n:
+                        # Novo jogador recebe um novo nome automaticamente.
+                        nome_input = random.choice(NOMES_GENERICOS)
                         estado_atual = ESTADO_NOME
-                        nome_input = ""
 
                 elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
                     if hasattr(evento, 'pos'):
@@ -343,15 +341,26 @@ def main():
                         pos_x = int(evento.x * LARGURA)
                         pos_y = int(evento.y * ALTURA)
 
-                    if estado_atual == ESTADO_VITORIA and btn_vitoria_repetir.collidepoint(pos_x, pos_y):
-                        iniciar_nova_partida()
-                    elif estado_atual == ESTADO_VITORIA and btn_vitoria_trocar.collidepoint(pos_x, pos_y):
-                        estado_atual = ESTADO_NOME
-                        nome_input = ""
+                    if estado_atual == ESTADO_VITORIA:
+                        if btn_vitoria_repetir.collidepoint(pos_x, pos_y):
+                            iniciar_nova_partida()
+                        elif btn_vitoria_trocar.collidepoint(pos_x, pos_y):
+                            nome_input = random.choice(NOMES_GENERICOS)
+                            estado_atual = ESTADO_NOME
                     elif estado_atual == ESTADO_GAMEOVER:
-                        iniciar_nova_partida()
+                        # Os botoes da arte de Game Over podem ser tratados como
+                        # zonas independentes; clicar em Trocar Jogador deve
+                        # voltar para a tela inicial.
+                        if 'btn_gameover_trocar' in locals() and btn_gameover_trocar.collidepoint(pos_x, pos_y):
+                            nome_input = random.choice(NOMES_GENERICOS)
+                            estado_atual = ESTADO_NOME
+                        elif 'btn_gameover_repetir' in locals() and btn_gameover_repetir.collidepoint(pos_x, pos_y):
+                            iniciar_nova_partida()
+                        else:
+                            iniciar_nova_partida()
 
         # --- Lógica por Estado ---
+
         if estado_atual == ESTADO_NOME:
             cursor_timer += dt
             if cursor_timer >= 0.5:
@@ -406,7 +415,7 @@ def main():
 
                             if plat.is_finish_line:
                                 estado_atual = ESTADO_VITORIA
-                                salvar_tempo(nome_input if nome_input.strip() else "Piloto", tempo_jogo)
+                                salvar_tempo(nome_input, tempo_jogo)
                                 ranking_top5 = carregar_top_ranking(5)
                             break
 
@@ -445,23 +454,13 @@ def main():
         # ----------------------------------------------------
         if estado_atual == ESTADO_NOME:
             if tela_inicial_img:
-                tela_inicial = pygame.transform.scale(tela_inicial_img, (LARGURA, ALTURA))
+                tela_inicial = pygame.transform.scale(
+                    tela_inicial_img,
+                    (LARGURA, ALTURA)
+                )
                 tela.blit(tela_inicial, (0, 0))
             else:
                 tela.fill((5, 10, 30))
-
-            # O texto, moldura e botão já fazem parte da arte.
-            # Aqui o Pygame desenha apenas o texto digitado dentro do retângulo.
-            txt_nome_display = nome_input + ("|" if cursor_visivel else "")
-            if nome_input or cursor_visivel:
-                txt_nome_draw = fonte_media.render(txt_nome_display, True, (255, 255, 255))
-                tela.blit(
-                    txt_nome_draw,
-                    (
-                        box_nome_rect.x + 18,
-                        box_nome_rect.y + box_nome_rect.height // 2 - txt_nome_draw.get_height() // 2,
-                    ),
-                )
 
         # ----------------------------------------------------
         # RENDERIZAR JOGO
@@ -530,7 +529,7 @@ def main():
             passo_rk = int(ALTURA * (72 / 1536))
 
             for idx, item in enumerate(ranking_top5[:5], start=1):
-                nome = str(item.get('nome', 'Piloto'))
+                nome = str(item.get('nome', 'Jogador'))
                 tempo = float(item.get('tempo', 0.0))
 
                 txt_nome = fonte_media.render(nome, True, (255, 255, 255))
