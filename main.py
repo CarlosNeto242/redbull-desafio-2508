@@ -258,13 +258,15 @@ async def main():
             style.border = "0"
             style.outline = "0"
             style.boxShadow = "none"
-            style.color = "white"
+            # O input HTML fica invisivel visualmente; o Pygame desenha o texto
+            # dentro do retangulo, garantindo que ele apareca tambem no Safari.
+            style.color = "transparent"
             style.fontFamily = "Arial, sans-serif"
             style.fontWeight = "700"
             style.fontSize = "18px"
             style.padding = "8px 14px"
             style.textAlign = "left"
-            style.caretColor = "white"
+            style.caretColor = "transparent"
             style.webkitAppearance = "none"
             style.userSelect = "text"
             style.touchAction = "manipulation"
@@ -282,6 +284,16 @@ async def main():
 
             browser_name_input.addEventListener("touchstart", _focar_input)
             browser_name_input.addEventListener("click", _focar_input)
+
+            def _sincronizar_nome_browser(event=None):
+                nonlocal nome_input
+                try:
+                    nome_input = str(browser_name_input.value)[:12]
+                except Exception:
+                    pass
+
+            browser_name_input.addEventListener("input", _sincronizar_nome_browser)
+            browser_name_input.addEventListener("change", _sincronizar_nome_browser)
 
             browser_document.body.appendChild(browser_name_input)
             browser_canvas = getattr(platform.window, "canvas", None)
@@ -377,9 +389,11 @@ async def main():
         dt = clock.tick(config.FPS) / 1000.0
         scroll = 0
 
-        if browser_name_input is not None:
+        if browser_name_input is not None and estado_atual == ESTADO_NOME:
             try:
-                nome_input = str(browser_name_input.value)[:12]
+                valor_browser = str(browser_name_input.value)[:12]
+                if valor_browser != nome_input:
+                    nome_input = valor_browser
             except Exception:
                 pass
 
@@ -607,20 +621,21 @@ async def main():
             else:
                 tela.fill((5, 10, 30))
 
-            # Em desktop, o Pygame desenha o texto.
-            # No navegador, o input HTML fica por cima da caixa para ativar o teclado virtual.
-            if browser_name_input is None:
-                txt_nome_display = nome_input + ("|" if cursor_visivel else "")
-                if nome_input or cursor_visivel:
-                    txt_nome_draw = fonte_media.render(txt_nome_display, True, (255, 255, 255))
-                    tela.blit(
-                        txt_nome_draw,
-                        (
-                            box_nome_rect.x + 18,
-                            box_nome_rect.y + box_nome_rect.height // 2 - txt_nome_draw.get_height() // 2,
-                        ),
-                    )
-            else:
+            # O Pygame desenha o texto tanto no PC quanto no Safari/iPad.
+            # No navegador, o input HTML fica transparente por cima apenas para
+            # receber o toque e abrir o teclado virtual.
+            txt_nome_display = nome_input + ("|" if cursor_visivel else "")
+            if nome_input or cursor_visivel:
+                txt_nome_draw = fonte_media.render(txt_nome_display, True, (255, 255, 255))
+                tela.blit(
+                    txt_nome_draw,
+                    (
+                        box_nome_rect.x + 18,
+                        box_nome_rect.y + box_nome_rect.height // 2 - txt_nome_draw.get_height() // 2,
+                    ),
+                )
+
+            if browser_name_input is not None:
                 atualizar_campo_nome_browser(True)
 
         # ----------------------------------------------------
