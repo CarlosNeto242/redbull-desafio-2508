@@ -27,6 +27,17 @@ def carregar_fundo():
         print(f"Aviso: Não foi possível carregar imagem de fundo ({caminho}): {e}")
         return None
 
+def carregar_tela_inicial():
+    """Carrega a arte pixelada da tela inicial."""
+    caminho = os.path.join("assets", "tela-inicial.png")
+    try:
+        imagem = pygame.image.load(caminho).convert()
+        return imagem
+    except Exception as e:
+        print(f"Aviso: Não foi possível carregar a tela inicial ({caminho}): {e}")
+        return None
+
+
 def gerar_nivel():
     """Gera o grupo de plataformas e latinhas de Red Bull da base até o topo."""
     plataformas = pygame.sprite.Group()
@@ -118,6 +129,8 @@ def main():
     fonte_muito_grande = pygame.font.SysFont("Arial", 46, bold=True)
 
     fundo_img = carregar_fundo()
+    tela_inicial_img = carregar_tela_inicial()
+
 
     # Estado Inicial
     estado_atual = ESTADO_NOME
@@ -142,8 +155,19 @@ def main():
     btn_esquerda = pygame.Rect(0, ALTURA - btn_altura, btn_largura, btn_altura)
     btn_direita = pygame.Rect(btn_largura, ALTURA - btn_altura, btn_largura, btn_altura)
 
-    # Botão Iniciar Jogo (na tela de Nome)
-    btn_iniciar_rect = pygame.Rect(LARGURA // 2 - 90, ALTURA // 2 + 50, 180, 45)
+    # Áreas clicáveis da arte da tela inicial.
+    # Coordenadas baseadas na imagem tela-inicial.png (1024 x 1536).
+    # Elas são redimensionadas para qualquer resolução definida em config.py.
+    def area_tela_inicial(x, y, w, h):
+        if tela_inicial_img:
+            sx = LARGURA / tela_inicial_img.get_width()
+            sy = ALTURA / tela_inicial_img.get_height()
+        else:
+            sx = sy = 1.0
+        return pygame.Rect(int(x * sx), int(y * sy), int(w * sx), int(h * sy))
+
+    box_nome_rect = area_tela_inicial(314, 694, 418, 128)
+    btn_iniciar_rect = area_tela_inicial(311, 854, 424, 126)
 
     tecla_esq_pressionada = False
     tecla_dir_pressionada = False
@@ -195,7 +219,11 @@ def main():
                         pos_x = int(evento.x * LARGURA)
                         pos_y = int(evento.y * ALTURA)
 
-                    if btn_iniciar_rect.collidepoint(pos_x, pos_y):
+                    if box_nome_rect.collidepoint(pos_x, pos_y):
+                        # Mantém o foco visual no campo; a digitação continua por KEYDOWN.
+                        cursor_visivel = True
+                        cursor_timer = 0.0
+                    elif btn_iniciar_rect.collidepoint(pos_x, pos_y):
                         if not nome_input.strip():
                             nome_input = "Piloto"
                         iniciar_nova_partida()
@@ -324,36 +352,31 @@ def main():
             tela.fill(config.BG_COLOR)
 
         # ----------------------------------------------------
-        # RENDERIZAR TELA DE ENTRADA DE NOME
+        # RENDERIZAR TELA INICIAL
         # ----------------------------------------------------
         if estado_atual == ESTADO_NOME:
-            overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
-            overlay.fill((10, 15, 30, 210))
-            tela.blit(overlay, (0, 0))
+            if tela_inicial_img:
+                tela_inicial = pygame.transform.scale(tela_inicial_img, (LARGURA, ALTURA))
+                tela.blit(tela_inicial, (0, 0))
+            else:
+                tela.fill((5, 10, 30))
 
-            txt_titulo = fonte_grande.render("OVERTIME", True, (255, 215, 0))
-            txt_sub = fonte_media.render("INSIRA O NOME DO JOGADOR", True, (255, 255, 255))
-            
-            tela.blit(txt_titulo, (LARGURA // 2 - txt_titulo.get_width() // 2, ALTURA // 4))
-            tela.blit(txt_sub, (LARGURA // 2 - txt_sub.get_width() // 2, ALTURA // 4 + 45))
-
-            # Caixa de Input
-            box_rect = pygame.Rect(LARGURA // 2 - 120, ALTURA // 2 - 30, 240, 45)
-            pygame.draw.rect(tela, (255, 255, 255), box_rect, border_radius=8)
-            pygame.draw.rect(tela, (0, 102, 204), box_rect, width=3, border_radius=8)
-
+            # O texto, moldura e botão já fazem parte da arte.
+            # Aqui o Pygame desenha apenas o texto digitado dentro do retângulo.
             txt_nome_display = nome_input + ("|" if cursor_visivel else "")
-            txt_nome_draw = fonte_media.render(txt_nome_display, True, (20, 20, 20))
-            tela.blit(txt_nome_draw, (box_rect.x + 15, box_rect.y + 12))
-
-            # Botão Iniciar Jogo
-            pygame.draw.rect(tela, (0, 150, 255), btn_iniciar_rect, border_radius=10)
-            pygame.draw.rect(tela, (255, 255, 255), btn_iniciar_rect, width=2, border_radius=10)
-            txt_btn_iniciar = fonte_media.render("INICIAR JOGO", True, (255, 255, 255))
-            tela.blit(txt_btn_iniciar, (btn_iniciar_rect.centerx - txt_btn_iniciar.get_width() // 2, btn_iniciar_rect.centery - 10))
+            if nome_input or cursor_visivel:
+                txt_nome_draw = fonte_media.render(txt_nome_display, True, (255, 255, 255))
+                tela.blit(
+                    txt_nome_draw,
+                    (
+                        box_nome_rect.x + 18,
+                        box_nome_rect.y + box_nome_rect.height // 2 - txt_nome_draw.get_height() // 2,
+                    ),
+                )
 
         # ----------------------------------------------------
         # RENDERIZAR JOGO
+        # ----------------------------------------------------
         # ----------------------------------------------------
         else:
             plataformas.draw(tela)
