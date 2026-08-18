@@ -61,15 +61,6 @@ def carregar_tela_vitoria():
         return None
 
 
-def carregar_tela_game_over():
-    caminho = os.path.join("assets", "tela-game-over.png")
-    try:
-        return pygame.image.load(caminho).convert()
-    except Exception as e:
-        print(f"Aviso: Não foi possível carregar a tela de game over ({caminho}): {e}")
-        return None
-
-
 def gerar_nivel():
     """Gera o grupo de plataformas e latinhas de Red Bull da base até o topo."""
     plataformas = pygame.sprite.Group()
@@ -182,7 +173,6 @@ def main():
     fundo_sky0, fundo_sky1 = carregar_sky()
     tela_inicial_img = carregar_tela_inicial()
     tela_vitoria_img = carregar_tela_vitoria()
-    tela_game_over_img = carregar_tela_game_over()
 
 
     # Estado Inicial
@@ -235,23 +225,6 @@ def main():
     # Aproxima as áreas dos botões JOGAR NOVAMENTE e TROCAR DE JOGADOR da arte.
     btn_vitoria_repetir = area_tela_vitoria(300, 1175, 450, 105)
     btn_vitoria_trocar = area_tela_vitoria(300, 1272, 450, 105)
-
-    # Áreas clicáveis da tela de Game Over (base 1024x1536).
-    def area_tela_game_over(x, y, w, h):
-        if tela_game_over_img:
-            sx = LARGURA / tela_game_over_img.get_width()
-            sy = ALTURA / tela_game_over_img.get_height()
-        else:
-            sx = sy = 1.0
-        return pygame.Rect(
-            int(x * sx),
-            int(y * sy),
-            int(w * sx),
-            int(h * sy)
-        )
-
-    btn_gameover_repetir = area_tela_game_over(290, 1110, 470, 105)
-    btn_gameover_trocar = area_tela_game_over(290, 1220, 470, 105)
 
     tecla_esq_pressionada = False
     tecla_dir_pressionada = False
@@ -361,23 +334,13 @@ def main():
                         pos_x = int(evento.x * LARGURA)
                         pos_y = int(evento.y * ALTURA)
 
-                    if estado_atual == ESTADO_GAMEOVER:
-                        if btn_gameover_trocar.collidepoint(pos_x, pos_y):
-                            estado_atual = ESTADO_NOME
-                            nome_input = ""
-                            cursor_visivel = True
-                            cursor_timer = 0.0
-                        elif btn_gameover_repetir.collidepoint(pos_x, pos_y):
-                            iniciar_nova_partida()
-
-                    elif estado_atual == ESTADO_VITORIA:
-                        if btn_vitoria_trocar.collidepoint(pos_x, pos_y):
-                            estado_atual = ESTADO_NOME
-                            nome_input = ""
-                            cursor_visivel = True
-                            cursor_timer = 0.0
-                        elif btn_vitoria_repetir.collidepoint(pos_x, pos_y):
-                            iniciar_nova_partida()
+                    if estado_atual == ESTADO_VITORIA and btn_vitoria_repetir.collidepoint(pos_x, pos_y):
+                        iniciar_nova_partida()
+                    elif estado_atual == ESTADO_VITORIA and btn_vitoria_trocar.collidepoint(pos_x, pos_y):
+                        estado_atual = ESTADO_NOME
+                        nome_input = ""
+                    elif estado_atual == ESTADO_GAMEOVER:
+                        iniciar_nova_partida()
 
         # --- Lógica por Estado ---
         if estado_atual == ESTADO_NOME:
@@ -528,13 +491,19 @@ def main():
         # RENDERIZAR GAME OVER
         # ----------------------------------------------------
         if estado_atual == ESTADO_GAMEOVER:
-            if tela_game_over_img:
-                tela_game_over = pygame.transform.scale(tela_game_over_img, (LARGURA, ALTURA))
-                tela.blit(tela_game_over, (0, 0))
-            else:
-                tela.fill((5, 10, 30))
-                txt_go = fonte_grande.render("GAME OVER", True, (230, 40, 40))
-                tela.blit(txt_go, (LARGURA // 2 - txt_go.get_width() // 2, ALTURA // 3))
+            overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            tela.blit(overlay, (0, 0))
+
+            txt_go = fonte_grande.render("GAME OVER", True, (230, 40, 40))
+            txt_sub = fonte_media.render(motivo_game_over, True, (255, 200, 200))
+            txt_r1 = fonte_media.render("[R] Jogar Novamente", True, (255, 255, 255))
+            txt_r2 = fonte_pequena.render("[N] Trocar de Jogador", True, (180, 200, 220))
+            
+            tela.blit(txt_go, (LARGURA // 2 - txt_go.get_width() // 2, ALTURA // 3))
+            tela.blit(txt_sub, (LARGURA // 2 - txt_sub.get_width() // 2, ALTURA // 3 + 40))
+            tela.blit(txt_r1, (LARGURA // 2 - txt_r1.get_width() // 2, ALTURA // 3 + 85))
+            tela.blit(txt_r2, (LARGURA // 2 - txt_r2.get_width() // 2, ALTURA // 3 + 115))
 
         # ----------------------------------------------------
         # RENDERIZAR VITÓRIA & LEADERBOARD
