@@ -172,10 +172,6 @@ def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
         brilho = (min(255, cor_fill[0]+60), min(255, cor_fill[1]+60), min(255, cor_fill[2]+60))
         pygame.draw.rect(tela, brilho, (bx, by, bw, 2))
 
-    # Texto centralizado
-    txt_lbl = fonte.render(f"ENERGIA {int(pct * 100)}%", True, (255, 255, 255))
-    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + bar_height//2 - txt_lbl.get_height() + 50//2))
-
 async def main():
     pygame.init()
     pygame.font.init()
@@ -185,8 +181,8 @@ async def main():
     pygame.display.set_caption("Overtime")
 
     clock = pygame.time.Clock()
-    fonte_pequena = pygame.font.SysFont("Arial", 13, bold=True)
-    fonte_media = pygame.font.SysFont("Arial", 16, bold=True)
+    fonte_pequena = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 13)
+    fonte_media = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 11)
     fonte_grande = pygame.font.SysFont("Arial", 26, bold=True)
     fonte_muito_grande = pygame.font.SysFont("Arial", 46, bold=True)
 
@@ -443,7 +439,7 @@ async def main():
             for item in coletados:
                 energia = min(config.MAX_ENERGY, energia + config.ENERGY_REFILL)
                 touro.ativar_voo()
-                voo_frases = ["ISSO NINGU\u00c9M FAZ", "PULO E OUSADIA", "N\u00c3O PARA DE SURPREENDER", "MENTE E CORPO SINCRONIZADA"]
+                voo_frases =["ISSO NINGUÉM FAZ", "PULO E OUSADIA", "RADICAL!!", "SE JOGA!!","INACREDITÁVEL"]
                 frase_voo_atual = random.choice(voo_frases)
 
             # Queda
@@ -492,8 +488,8 @@ async def main():
             cor_esq = (255, 255, 255, 90) if touch_esq_pressionado else (255, 255, 255, 35)
             cor_dir = (255, 255, 255, 90) if touch_dir_pressionado else (255, 255, 255, 35)
 
-            txt_esq = fonte_muito_grande.render("\u25c4", True, (255, 255, 255))
-            txt_dir = fonte_muito_grande.render("\u25ba", True, (255, 255, 255))
+            txt_esq = fonte_muito_grande.render("<", True, (255, 255, 255))
+            txt_dir = fonte_muito_grande.render(">", True, (255, 255, 255))
             tela.blit(txt_esq, (btn_largura // 2 - txt_esq.get_width() // 2, ALTURA - btn_altura // 2 - 10))
             tela.blit(txt_dir, (btn_largura + btn_largura // 2 - txt_dir.get_width() // 2, ALTURA - btn_altura // 2 - 10))
 
@@ -504,7 +500,7 @@ async def main():
             tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 37))
 
             if touro.voando and frase_voo_atual:
-                txt_voo = fonte_grande.render(frase_voo_atual, True, (0, 220, 255))
+                txt_voo = fonte_grande.render(frase_voo_atual, True, (200, 0, 60))
                 tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 400))
 
         # ----------------------------------------------------
