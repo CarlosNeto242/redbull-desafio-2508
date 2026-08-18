@@ -49,6 +49,14 @@ def carregar_tela_inicial():
         print(f"Aviso: Não foi possível carregar a tela inicial ({caminho}): {e}")
         return None
 
+def carregar_tela_game_over():
+    caminho = os.path.join("assets", "tela-game-over.png")
+    try:
+        return pygame.image.load(caminho).convert()
+    except Exception as e:
+        print(f"Aviso: N\u00e3o foi poss\u00edvel carregar a tela de game over ({caminho}): {e}")
+        return None
+
 
 def carregar_tela_vitoria():
     """Carrega a arte pixelada da tela de vitória."""
@@ -173,6 +181,7 @@ def main():
     fundo_sky0, fundo_sky1 = carregar_sky()
     tela_inicial_img = carregar_tela_inicial()
     tela_vitoria_img = carregar_tela_vitoria()
+    tela_game_over_img = carregar_tela_game_over()
 
 
     # Estado Inicial
@@ -491,19 +500,13 @@ def main():
         # RENDERIZAR GAME OVER
         # ----------------------------------------------------
         if estado_atual == ESTADO_GAMEOVER:
-            overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))
-            tela.blit(overlay, (0, 0))
-
-            txt_go = fonte_grande.render("GAME OVER", True, (230, 40, 40))
-            txt_sub = fonte_media.render(motivo_game_over, True, (255, 200, 200))
-            txt_r1 = fonte_media.render("[R] Jogar Novamente", True, (255, 255, 255))
-            txt_r2 = fonte_pequena.render("[N] Trocar de Jogador", True, (180, 200, 220))
-            
-            tela.blit(txt_go, (LARGURA // 2 - txt_go.get_width() // 2, ALTURA // 3))
-            tela.blit(txt_sub, (LARGURA // 2 - txt_sub.get_width() // 2, ALTURA // 3 + 40))
-            tela.blit(txt_r1, (LARGURA // 2 - txt_r1.get_width() // 2, ALTURA // 3 + 85))
-            tela.blit(txt_r2, (LARGURA // 2 - txt_r2.get_width() // 2, ALTURA // 3 + 115))
+            if tela_game_over_img:
+                tela_game_over = pygame.transform.scale(tela_game_over_img, (LARGURA, ALTURA))
+                tela.blit(tela_game_over, (0, 0))
+            else:
+                tela.fill((5, 10, 30))
+                txt_go = fonte_grande.render("GAME OVER", True, (230, 40, 40))
+                tela.blit(txt_go, (LARGURA // 2 - txt_go.get_width() // 2, ALTURA // 3))
 
         # ----------------------------------------------------
         # RENDERIZAR VITÓRIA & LEADERBOARD
