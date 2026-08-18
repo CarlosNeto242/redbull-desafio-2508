@@ -165,8 +165,8 @@ def main():
     pygame.display.set_caption("Overtime")
 
     clock = pygame.time.Clock()
-    fonte_pequena = pygame.font.SysFont("Arial", 13, bold=True)
-    fonte_media = pygame.font.SysFont("Arial", 16, bold=True)
+    fonte_pequena = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 13)
+    fonte_media = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 11)
     fonte_grande = pygame.font.SysFont("Arial", 26, bold=True)
     fonte_muito_grande = pygame.font.SysFont("Arial", 46, bold=True)
 
@@ -406,7 +406,7 @@ def main():
             for item in coletados:
                 energia = min(config.MAX_ENERGY, energia + config.ENERGY_REFILL)
                 touro.ativar_voo()
-                voo_frases = ["ISSO NINGUÉM FAZ", "PULO E OUSADIA", "NÃO PARA DE SURPREENDER", "MENTE E CORPO SINCRONIZADA"]
+                voo_frases = ["ISSO NINGUÉM FAZ", "PULO E OUSADIA", "RADICAL!!", "SE JOGA!!","INACREDITÁVEL"]
                 frase_voo_atual = random.choice(voo_frases)
 
             # Queda
