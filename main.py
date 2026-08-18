@@ -76,7 +76,7 @@ def gerar_nivel():
 
 def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
     """Desenha a barra de energia no topo da tela."""
-    bar_width = 180
+    bar_width = config.WIDTH
     bar_height = 18
     x = config.WIDTH // 2 - bar_width // 2
     y = 12
@@ -153,11 +153,17 @@ def main():
     def iniciar_nova_partida():
         nonlocal touro, plataformas, itens, energia, tempo_jogo, altura_maxima_alcancada, bg_y_offset, estado_atual
         touro = Touro(LARGURA // 2 - 32, ALTURA - 160)
+        touro.vx = 0
+        touro.vy = 0
         plataformas, itens = gerar_nivel()
         energia = config.MAX_ENERGY
         tempo_jogo = 0.0
         altura_maxima_alcancada = 0
         bg_y_offset = 0.0
+        tecla_esq_pressionada = False
+        tecla_dir_pressionada = False
+        touch_esq_pressionado = False
+        touch_dir_pressionado = False
         estado_atual = ESTADO_JOGANDO
 
     rodando = True
@@ -343,7 +349,7 @@ def main():
             # Botão Iniciar Jogo
             pygame.draw.rect(tela, (0, 150, 255), btn_iniciar_rect, border_radius=10)
             pygame.draw.rect(tela, (255, 255, 255), btn_iniciar_rect, width=2, border_radius=10)
-            txt_btn_iniciar = fonte_media.render("INICIAR JOGO ▶", True, (255, 255, 255))
+            txt_btn_iniciar = fonte_media.render("INICIAR JOGO", True, (255, 255, 255))
             tela.blit(txt_btn_iniciar, (btn_iniciar_rect.centerx - txt_btn_iniciar.get_width() // 2, btn_iniciar_rect.centery - 10))
 
         # ----------------------------------------------------
@@ -371,8 +377,8 @@ def main():
             tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
 
             if touro.voando:
-                txt_voo = fonte_pequena.render("⚡ VOO RED BULL! ⚡", True, (0, 220, 255))
-                tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 36))
+                txt_voo = fonte_grande.render("⚡ VOO RED BULL! ⚡", True, (0, 220, 255))
+                tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 400))
 
         # ----------------------------------------------------
         # RENDERIZAR GAME OVER
