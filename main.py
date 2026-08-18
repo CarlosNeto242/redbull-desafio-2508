@@ -14,18 +14,29 @@ ESTADO_JOGANDO = 1
 ESTADO_GAMEOVER = 2
 ESTADO_VITORIA = 3
 
-def carregar_fundo():
-    caminho = os.path.join("assets", "fundo-espacial.png")
+def carregar_sky():
+    caminho0 = os.path.join("assets", "sky", "sky0.png")
+    caminho1 = os.path.join("assets", "sky", "sky1.png")
+    sky0_img = None
+    sky1_img = None
+    
     try:
-        fundo_img = pygame.image.load(caminho).convert()
-        largura_fundo = config.WIDTH
-        altura_fundo = int(fundo_img.get_height() * (config.WIDTH / fundo_img.get_width()))
-        if altura_fundo < config.HEIGHT:
-            altura_fundo = config.HEIGHT
-        return pygame.transform.smoothscale(fundo_img, (largura_fundo, altura_fundo))
+        fundo_img0 = pygame.image.load(caminho0).convert()
+        largura0 = config.WIDTH
+        altura0 = int(fundo_img0.get_height() * (config.WIDTH / fundo_img0.get_width()))
+        sky0_img = pygame.transform.smoothscale(fundo_img0, (largura0, altura0))
     except Exception as e:
-        print(f"Aviso: Não foi possível carregar imagem de fundo ({caminho}): {e}")
-        return None
+        print(f"Aviso: Não foi possível carregar {caminho0}: {e}")
+        
+    try:
+        fundo_img1 = pygame.image.load(caminho1).convert()
+        largura1 = config.WIDTH
+        altura1 = int(fundo_img1.get_height() * (config.WIDTH / fundo_img1.get_width()))
+        sky1_img = pygame.transform.smoothscale(fundo_img1, (largura1, altura1))
+    except Exception as e:
+        print(f"Aviso: Não foi possível carregar {caminho1}: {e}")
+        
+    return sky0_img, sky1_img
 
 def carregar_tela_inicial():
     """Carrega a arte pixelada da tela inicial."""
@@ -162,7 +173,7 @@ def main():
     fonte_grande = pygame.font.SysFont("Arial", 26, bold=True)
     fonte_muito_grande = pygame.font.SysFont("Arial", 46, bold=True)
 
-    fundo_img = carregar_fundo()
+    fundo_sky0, fundo_sky1 = carregar_sky()
     tela_inicial_img = carregar_tela_inicial()
     tela_vitoria_img = carregar_tela_vitoria()
 
@@ -407,12 +418,19 @@ def main():
                 motivo_game_over = "Você caiu!"
 
         # --- Desenho na Tela ---
-        if fundo_img:
-            h_fundo = fundo_img.get_height()
-            pos_y = int(bg_y_offset % h_fundo) - h_fundo
-            tela.blit(fundo_img, (0, pos_y))
-            if pos_y + h_fundo < ALTURA:
-                tela.blit(fundo_img, (0, pos_y + h_fundo))
+        if fundo_sky0 and fundo_sky1:
+            h_sky0 = fundo_sky0.get_height()
+            h_sky1 = fundo_sky1.get_height()
+            
+            y_sky0 = ALTURA - h_sky0 + bg_y_offset
+            
+            if y_sky0 < ALTURA:
+                tela.blit(fundo_sky0, (0, y_sky0))
+            
+            y_atual = y_sky0 - h_sky1
+            while y_atual + h_sky1 > 0:
+                tela.blit(fundo_sky1, (0, y_atual))
+                y_atual -= h_sky1
         else:
             tela.fill(config.BG_COLOR)
 
