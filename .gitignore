@@ -4,4 +4,4 @@ venv/
 .idea/  
 **/.snapshots/
 **/.alpackages/
-ranking.json
+*.json
