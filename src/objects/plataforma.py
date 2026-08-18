@@ -25,11 +25,6 @@ class Platform(pygame.sprite.Sprite):
         img_base = _get_platform_image(random.randint(1, 3))
         if img_base and img_base is not False:
             self.image = pygame.transform.smoothscale(img_base, (self.width, self.height))
-            if is_finish_line:
-                # Destaca a linha de chegada com uma tonalidade dourada/brilhante
-                overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-                overlay.fill((255, 215, 0, 80))
-                self.image.blit(overlay, (0, 0))
         else:
             # Fallback visual caso a imagem não exista
             self.image = pygame.Surface((self.width, self.height))
