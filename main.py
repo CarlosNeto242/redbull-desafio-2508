@@ -38,6 +38,17 @@ def carregar_tela_inicial():
         return None
 
 
+def carregar_tela_vitoria():
+    """Carrega a arte pixelada da tela de vitória."""
+    caminho = os.path.join("assets", "tela-vitoria.png")
+    try:
+        imagem = pygame.image.load(caminho).convert()
+        return imagem
+    except Exception as e:
+        print(f"Aviso: Não foi possível carregar a tela de vitória ({caminho}): {e}")
+        return None
+
+
 def gerar_nivel():
     """Gera o grupo de plataformas e latinhas de Red Bull da base até o topo."""
     plataformas = pygame.sprite.Group()
@@ -130,6 +141,7 @@ def main():
 
     fundo_img = carregar_fundo()
     tela_inicial_img = carregar_tela_inicial()
+    tela_vitoria_img = carregar_tela_vitoria()
 
 
     # Estado Inicial
@@ -168,6 +180,19 @@ def main():
 
     box_nome_rect = area_tela_inicial(314, 694, 418, 128)
     btn_iniciar_rect = area_tela_inicial(311, 854, 424, 126)
+
+    # Áreas clicáveis da tela de vitória (base 1024x1536).
+    def area_tela_vitoria(x, y, w, h):
+        if tela_vitoria_img:
+            sx = LARGURA / tela_vitoria_img.get_width()
+            sy = ALTURA / tela_vitoria_img.get_height()
+        else:
+            sx = sy = 1.0
+        return pygame.Rect(int(x * sx), int(y * sy), int(w * sx), int(h * sy))
+
+    # Aproxima as áreas dos botões JOGAR NOVAMENTE e TROCAR DE JOGADOR da arte.
+    btn_vitoria_repetir = area_tela_vitoria(300, 1175, 450, 105)
+    btn_vitoria_trocar = area_tela_vitoria(300, 1272, 450, 105)
 
     tecla_esq_pressionada = False
     tecla_dir_pressionada = False
@@ -268,8 +293,19 @@ def main():
                         nome_input = ""
 
                 elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
-                    # Reinicia toque rápido ao clicar
-                    iniciar_nova_partida()
+                    if hasattr(evento, 'pos'):
+                        pos_x, pos_y = evento.pos
+                    else:
+                        pos_x = int(evento.x * LARGURA)
+                        pos_y = int(evento.y * ALTURA)
+
+                    if estado_atual == ESTADO_VITORIA and btn_vitoria_repetir.collidepoint(pos_x, pos_y):
+                        iniciar_nova_partida()
+                    elif estado_atual == ESTADO_VITORIA and btn_vitoria_trocar.collidepoint(pos_x, pos_y):
+                        estado_atual = ESTADO_NOME
+                        nome_input = ""
+                    elif estado_atual == ESTADO_GAMEOVER:
+                        iniciar_nova_partida()
 
         # --- Lógica por Estado ---
         if estado_atual == ESTADO_NOME:
@@ -425,34 +461,45 @@ def main():
         # RENDERIZAR VITÓRIA & LEADERBOARD
         # ----------------------------------------------------
         elif estado_atual == ESTADO_VITORIA:
-            overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
-            overlay.fill((5, 15, 35, 220))
-            tela.blit(overlay, (0, 0))
+            # A arte contém toda a interface visual: título, molduras, touro e botões.
+            if tela_vitoria_img:
+                tela_vitoria = pygame.transform.scale(tela_vitoria_img, (LARGURA, ALTURA))
+                tela.blit(tela_vitoria, (0, 0))
+            else:
+                tela.fill((5, 10, 30))
 
-            txt_vit = fonte_grande.render("🏆 VOCÊ CHEGOU AO TOPO! 🏆", True, (255, 215, 0))
-            txt_final = fonte_media.render(f"Piloto: {nome_input} | Tempo: {tempo_jogo:.2f}s", True, (255, 255, 255))
-            
-            tela.blit(txt_vit, (LARGURA // 2 - txt_vit.get_width() // 2, 40))
-            tela.blit(txt_final, (LARGURA // 2 - txt_final.get_width() // 2, 80))
+            # O número do tempo fica propositalmente vazio na imagem e é escrito pelo Pygame.
+            txt_tempo = fonte_media.render(f"{tempo_jogo:.2f}s", True, (255, 215, 0))
+            tempo_x = int(LARGURA * 0.56) - txt_tempo.get_width() // 2
+            tempo_y = int(ALTURA * (530 / 1536))  # antes era 482
+            tela.blit(txt_tempo, (tempo_x, tempo_y))
 
-            # Tabela de Ranking Top 5
-            txt_rk_title = fonte_media.render("--- MELHORES TEMPOS ---", True, (0, 200, 255))
-            tela.blit(txt_rk_title, (LARGURA // 2 - txt_rk_title.get_width() // 2, 125))
+            # A lista da arte também fica vazia; o Pygame preenche somente os nomes e tempos.
+            y_rk = int(ALTURA * (660 / 1536))  # antes era 610
+            passo_rk = int(ALTURA * (72 / 1536))
 
-            y_rk = 160
-            for idx, item in enumerate(ranking_top5, start=1):
-                linha = f"{idx}. {item.get('nome', 'Piloto')} - {item.get('tempo', 0.0):.2f}s"
-                cor_linha = (255, 215, 0) if idx == 1 else (240, 240, 240)
-                txt_item = fonte_media.render(linha, True, cor_linha)
-                tela.blit(txt_item, (LARGURA // 2 - 100, y_rk))
-                y_rk += 30
+            for idx, item in enumerate(ranking_top5[:5], start=1):
+                nome = str(item.get('nome', 'Piloto'))
+                tempo = float(item.get('tempo', 0.0))
 
-            txt_op1 = fonte_media.render("[R] Jogar Novamente", True, (255, 255, 255))
-            txt_op2 = fonte_pequena.render("[N] Trocar de Jogador", True, (180, 200, 220))
-            
-            tela.blit(txt_op1, (LARGURA // 2 - txt_op1.get_width() // 2, ALTURA - 100))
-            tela.blit(txt_op2, (LARGURA // 2 - txt_op2.get_width() // 2, ALTURA - 65))
+                txt_nome = fonte_media.render(nome, True, (255, 255, 255))
+                txt_item_tempo = fonte_media.render(
+                    f"{tempo:.2f}s",
+                    True,
+                    (255, 215, 0) if idx == 1 else (255, 255, 255)
+                )
 
+                tela.blit(
+                    txt_nome,
+                    (int(LARGURA * (300 / 1024)), y_rk)
+                )
+
+                tela.blit(
+                    txt_item_tempo,
+                    (int(LARGURA * (700 / 1024)) - txt_item_tempo.get_width() // 2, y_rk)
+                )
+
+                y_rk += passo_rk
         pygame.display.flip()
 
     pygame.quit()
