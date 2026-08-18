@@ -4,18 +4,10 @@ import os
 import config
 
 # Carregamento seguro da imagem da plataforma
-_platform_image = None
-
-def _get_platform_image():
-    global _platform_image
-    if _platform_image is None:
-        caminho = os.path.join("assets", "plataforma.png")
-        try:
-            _platform_image = pygame.image.load(caminho).convert_alpha()
-        except Exception as e:
-            print(f"Aviso: Não foi possível carregar imagem da plataforma ({caminho}): {e}")
-            _platform_image = False
-    return _platform_image
+def _get_platform_image(numero):
+    caminho_imagem = os.path.join("assets", f"plataforma-{random.randint(1, 3)}.png")
+    _platform_image = pygame.image.load(caminho_imagem).convert_alpha()
+    return _platform_image.set_alpha(170)
 
 
 class Platform(pygame.sprite.Sprite):
@@ -30,7 +22,7 @@ class Platform(pygame.sprite.Sprite):
         self.direction = random.choice([-1, 1])
         self.speed = random.randint(1, 2)
         
-        img_base = _get_platform_image()
+        img_base = _get_platform_image(random.randint(1, 3))
         if img_base and img_base is not False:
             self.image = pygame.transform.smoothscale(img_base, (self.width, self.height))
             if is_finish_line:

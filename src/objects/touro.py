@@ -19,7 +19,7 @@ class Touro:
         self.frames_direita = []
         self.frames_esquerda = []
         self.frame_index = 0.0
-        self.frame_speed = 0.05  # Velocidade da troca de frames
+        self.frame_speed = 0.1  # Velocidade da troca de frames
         
         # Sprites de Voo (Red Bull Power-up)
         self.sprite_voando_direita = None
@@ -36,7 +36,7 @@ class Touro:
         caminho_base = os.path.join("assets", "tourinho")
         try:
             # Carrega os 4 frames de pulo
-            for i in range(1, 5):
+            for i in range(1, 4):
                 img_dir = pygame.image.load(os.path.join(caminho_base, f"pulando{i}-direita.png")).convert_alpha()
                 img_esq = pygame.image.load(os.path.join(caminho_base, f"pulando{i}-esquerda.png")).convert_alpha()
                 

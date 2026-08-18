@@ -6,9 +6,16 @@ import config
 from src.objects.touro import Touro
 from src.objects.plataforma import Platform
 from src.objects.item import RedBullItem
+from src.utils.leaderboard import salvar_tempo, carregar_top_ranking
+
+# Estados do Jogo
+ESTADO_NOME = 0
+ESTADO_JOGANDO = 1
+ESTADO_GAMEOVER = 2
+ESTADO_VITORIA = 3
 
 def carregar_fundo():
-    caminho = os.path.join("assets", "fundo.png")
+    caminho = os.path.join("assets", "fundo-espacial.png")
     try:
         fundo_img = pygame.image.load(caminho).convert()
         largura_fundo = config.WIDTH
@@ -48,13 +55,13 @@ def gerar_nivel():
         plat = Platform(x=x_plat, y=y_atual, width=config.PLATFORM_WIDTH, moving=eh_movel)
         plataformas.add(plat)
 
-        # 30% de chance de spawnar uma latinha de Red Bull sobre a plataforma
+        # 20% de chance de spawnar uma latinha de Red Bull sobre a plataforma
         if random.random() < 0.20:
             item_x = plat.rect.centerx - 13
             item_y = plat.rect.top - 40
             itens.add(RedBullItem(item_x, item_y))
 
-    # 3. Plataforma Final de Chegada
+    # 3. Plataforma Final de Chegada (Finish Line)
     plataforma_chegada = Platform(
         x=config.WIDTH // 2 - 100,
         y=y_atual - 80,
@@ -68,16 +75,15 @@ def gerar_nivel():
     return plataformas, itens
 
 def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
-    """Desenha a barra de energia no topo da tela com cor dinâmica."""
-    bar_width = 220
-    bar_height = 20
+    """Desenha a barra de energia no topo da tela."""
+    bar_width = 180
+    bar_height = 18
     x = config.WIDTH // 2 - bar_width // 2
-    y = 15
+    y = 12
 
     pct = max(0.0, min(1.0, energia_atual / max_energia))
     fill_width = int(bar_width * pct)
 
-    # Cor dinâmica: Azul -> Amarelo -> Vermelho conforme a energia cai
     if pct > 0.5:
         cor_fill = (0, 150, 255)
     elif pct > 0.25:
@@ -85,21 +91,17 @@ def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
     else:
         cor_fill = (230, 30, 30)
 
-    # Fundo da barra
     fundo_rect = pygame.Rect(x, y, bar_width, bar_height)
     pygame.draw.rect(tela, config.ENERGY_BAR_BG, fundo_rect, border_radius=6)
     
-    # Preenchimento
     if fill_width > 0:
         fill_rect = pygame.Rect(x, y, fill_width, bar_height)
         pygame.draw.rect(tela, cor_fill, fill_rect, border_radius=6)
 
-    # Borda
     pygame.draw.rect(tela, (255, 255, 255), fundo_rect, width=2, border_radius=6)
 
-    # Rótulo de texto
     txt_lbl = fonte.render(f"ENERGIA {int(pct * 100)}%", True, (255, 255, 255))
-    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + 2))
+    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + 1))
 
 def main():
     pygame.init()
@@ -110,96 +112,150 @@ def main():
     pygame.display.set_caption("Overtime")
 
     clock = pygame.time.Clock()
-    fonte = pygame.font.SysFont("Arial", 14, bold=True)
+    fonte_pequena = pygame.font.SysFont("Arial", 13, bold=True)
+    fonte_media = pygame.font.SysFont("Arial", 16, bold=True)
     fonte_grande = pygame.font.SysFont("Arial", 26, bold=True)
 
     fundo_img = carregar_fundo()
-    bg_y_offset = 0.0
 
-    # Instância do jogo
-    touro = Touro(LARGURA // 2 - 32, ALTURA - 160)
-    plataformas, itens = gerar_nivel()
+    # Estado Inicial
+    estado_atual = ESTADO_NOME
+    nome_input = ""
+    cursor_visivel = True
+    cursor_timer = 0.0
 
-    # Rastreamento de energia e estado do jogo
+    # Dados da partida
+    touro = None
+    plataformas = None
+    itens = None
     energia = config.MAX_ENERGY
     tempo_jogo = 0.0
     altura_maxima_alcancada = 0
-    venceu = False
-    game_over = False
     motivo_game_over = ""
+    ranking_top5 = []
+    bg_y_offset = 0.0
 
-    # Botões Touch (Rodapé)
+    # Botões Touch (Rodapé da tela durante o jogo)
     btn_altura = 90
     btn_largura = LARGURA // 2
     btn_esquerda = pygame.Rect(0, ALTURA - btn_altura, btn_largura, btn_altura)
     btn_direita = pygame.Rect(btn_largura, ALTURA - btn_altura, btn_largura, btn_altura)
+
+    # Botão Iniciar Jogo (na tela de Nome)
+    btn_iniciar_rect = pygame.Rect(LARGURA // 2 - 90, ALTURA // 2 + 50, 180, 45)
 
     tecla_esq_pressionada = False
     tecla_dir_pressionada = False
     touch_esq_pressionado = False
     touch_dir_pressionado = False
 
+    def iniciar_nova_partida():
+        nonlocal touro, plataformas, itens, energia, tempo_jogo, altura_maxima_alcancada, bg_y_offset, estado_atual
+        touro = Touro(LARGURA // 2 - 32, ALTURA - 160)
+        plataformas, itens = gerar_nivel()
+        energia = config.MAX_ENERGY
+        tempo_jogo = 0.0
+        altura_maxima_alcancada = 0
+        bg_y_offset = 0.0
+        estado_atual = ESTADO_JOGANDO
+
     rodando = True
     while rodando:
-        dt = clock.tick(config.FPS) / 1000.0  # Tempo em segundos desde o último frame
+        dt = clock.tick(config.FPS) / 1000.0
         scroll = 0
 
-        # 1. Tratar Eventos
+        # --- Eventos ---
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
 
-            elif evento.type == pygame.KEYDOWN:
-                if evento.key in (pygame.K_LEFT, pygame.K_a):
-                    tecla_esq_pressionada = True
-                elif evento.key in (pygame.K_RIGHT, pygame.K_d):
-                    tecla_dir_pressionada = True
-                elif evento.key == pygame.K_r and (venceu or game_over):
-                    # Reiniciar partida
-                    touro = Touro(LARGURA // 2 - 32, ALTURA - 160)
-                    plataformas, itens = gerar_nivel()
-                    energia = config.MAX_ENERGY
-                    tempo_jogo = 0.0
-                    altura_maxima_alcancada = 0
-                    bg_y_offset = 0.0
-                    venceu = False
-                    game_over = False
+            # --- ESTADO 1: ENTRADA DE NOME ---
+            if estado_atual == ESTADO_NOME:
+                if evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_RETURN:
+                        if nome_input.strip():
+                            iniciar_nova_partida()
+                    elif evento.key == pygame.K_BACKSPACE:
+                        nome_input = nome_input[:-1]
+                    else:
+                        if len(nome_input) < 12 and evento.unicode.isprintable():
+                            nome_input += evento.unicode
 
-            elif evento.type == pygame.KEYUP:
-                if evento.key in (pygame.K_LEFT, pygame.K_a):
-                    tecla_esq_pressionada = False
-                elif evento.key in (pygame.K_RIGHT, pygame.K_d):
-                    tecla_dir_pressionada = False
+                elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
+                    if hasattr(evento, 'pos'):
+                        pos_x, pos_y = evento.pos
+                    else:
+                        pos_x = int(evento.x * LARGURA)
+                        pos_y = int(evento.y * ALTURA)
 
-            elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
-                if hasattr(evento, 'pos'):
-                    pos_x, pos_y = evento.pos
-                else:
-                    pos_x = int(evento.x * LARGURA)
-                    pos_y = int(evento.y * ALTURA)
+                    if btn_iniciar_rect.collidepoint(pos_x, pos_y):
+                        if not nome_input.strip():
+                            nome_input = "Piloto"
+                        iniciar_nova_partida()
 
-                if btn_esquerda.collidepoint(pos_x, pos_y):
-                    touch_esq_pressionado = True
-                elif btn_direita.collidepoint(pos_x, pos_y):
-                    touch_dir_pressionado = True
+            # --- ESTADO 2: JOGANDO ---
+            elif estado_atual == ESTADO_JOGANDO:
+                if evento.type == pygame.KEYDOWN:
+                    if evento.key in (pygame.K_LEFT, pygame.K_a):
+                        tecla_esq_pressionada = True
+                    elif evento.key in (pygame.K_RIGHT, pygame.K_d):
+                        tecla_dir_pressionada = True
 
-            elif evento.type in (pygame.MOUSEBUTTONUP, pygame.FINGERUP):
-                touch_esq_pressionado = False
-                touch_dir_pressionado = False
+                elif evento.type == pygame.KEYUP:
+                    if evento.key in (pygame.K_LEFT, pygame.K_a):
+                        tecla_esq_pressionada = False
+                    elif evento.key in (pygame.K_RIGHT, pygame.K_d):
+                        tecla_dir_pressionada = False
 
-        if not game_over and not venceu:
+                elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
+                    if hasattr(evento, 'pos'):
+                        pos_x, pos_y = evento.pos
+                    else:
+                        pos_x = int(evento.x * LARGURA)
+                        pos_y = int(evento.y * ALTURA)
+
+                    if btn_esquerda.collidepoint(pos_x, pos_y):
+                        touch_esq_pressionado = True
+                    elif btn_direita.collidepoint(pos_x, pos_y):
+                        touch_dir_pressionado = True
+
+                elif evento.type in (pygame.MOUSEBUTTONUP, pygame.FINGERUP):
+                    touch_esq_pressionado = False
+                    touch_dir_pressionado = False
+
+            # --- ESTADO 3 & 4: GAME OVER OU VITÓRIA ---
+            elif estado_atual in (ESTADO_GAMEOVER, ESTADO_VITORIA):
+                if evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_r:
+                        iniciar_nova_partida()
+                    elif evento.key == pygame.K_n:
+                        estado_atual = ESTADO_NOME
+                        nome_input = ""
+
+                elif evento.type in (pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN):
+                    # Reinicia toque rápido ao clicar
+                    iniciar_nova_partida()
+
+        # --- Lógica por Estado ---
+        if estado_atual == ESTADO_NOME:
+            cursor_timer += dt
+            if cursor_timer >= 0.5:
+                cursor_visivel = not cursor_visivel
+                cursor_timer = 0.0
+
+        elif estado_atual == ESTADO_JOGANDO:
             tempo_jogo += dt
 
-            # Consumo de Energia: Fica mais rápido quanto mais tempo passa
+            # Consumo acelerado de energia
             taxa_consumo = config.INITIAL_DECAY_RATE + (tempo_jogo * config.DECAY_ACCELERATION)
             energia -= taxa_consumo * dt
 
             if energia <= 0:
                 energia = 0
-                game_over = True
+                estado_atual = ESTADO_GAMEOVER
                 motivo_game_over = "Energia Esgotada!"
 
-            # 2. Movimentação Horizontal
+            # Controles
             mover_esq = tecla_esq_pressionada or touch_esq_pressionado
             mover_dir = tecla_dir_pressionada or touch_dir_pressionado
 
@@ -210,10 +266,10 @@ def main():
             else:
                 touro.parar_horizontal()
 
-            # 3. Atualizar Touro
+            # Atualiza touro
             touro.update()
 
-            # 4. Câmera Vertical
+            # Câmera Vertical
             if touro.rect.y < ALTURA // 2:
                 scroll = ALTURA // 2 - touro.rect.y
                 touro.y += scroll
@@ -221,11 +277,10 @@ def main():
                 altura_maxima_alcancada += scroll
                 bg_y_offset += scroll * 0.5
 
-            # 5. Atualizar Plataformas e Itens
             plataformas.update(scroll)
             itens.update(scroll)
 
-            # 6. Colisão com Plataformas
+            # Colisão com Plataformas
             if touro.vy > 0 and not touro.voando:
                 for plat in plataformas:
                     if plat.rect.colliderect(touro.rect):
@@ -235,22 +290,23 @@ def main():
                             touro.quicar()
 
                             if plat.is_finish_line:
-                                venceu = True
+                                estado_atual = ESTADO_VITORIA
+                                salvar_tempo(nome_input if nome_input.strip() else "Piloto", tempo_jogo)
+                                ranking_top5 = carregar_top_ranking(5)
                             break
 
-            # 7. Colisão com Latinhas de Red Bull
+            # Colisão com Red Bull
             coletados = pygame.sprite.spritecollide(touro, itens, True)
             for item in coletados:
-                # Recarrega energia e ativa o voo de 1 segundo!
                 energia = min(config.MAX_ENERGY, energia + config.ENERGY_REFILL)
                 touro.ativar_voo()
 
-            # 8. Checar Queda do Jogador
+            # Queda
             if touro.rect.top > ALTURA:
-                game_over = True
+                estado_atual = ESTADO_GAMEOVER
                 motivo_game_over = "Você caiu!"
 
-        # 9. Desenhar na Tela
+        # --- Desenho na Tela ---
         if fundo_img:
             h_fundo = fundo_img.get_height()
             pos_y = int(bg_y_offset % h_fundo) - h_fundo
@@ -260,65 +316,120 @@ def main():
         else:
             tela.fill(config.BG_COLOR)
 
-        # Desenhar Plataformas, Itens e Touro
-        plataformas.draw(tela)
-        itens.draw(tela)
-        touro.draw(tela)
-
-        # Desenhar Botões Touch (Rodapé)
-        superficie_btn = pygame.Surface((LARGURA, btn_altura), pygame.SRCALPHA)
-        cor_esq = (255, 255, 255, 90) if touch_esq_pressionado else (255, 255, 255, 35)
-        cor_dir = (255, 255, 255, 90) if touch_dir_pressionado else (255, 255, 255, 35)
-        
-        pygame.draw.rect(superficie_btn, cor_esq, (0, 0, btn_largura - 2, btn_altura), border_radius=10)
-        pygame.draw.rect(superficie_btn, cor_dir, (btn_largura + 2, 0, btn_largura - 2, btn_altura), border_radius=10)
-        tela.blit(superficie_btn, (0, ALTURA - btn_altura))
-
-        txt_esq = fonte.render("◄ ESQUERDA", True, (255, 255, 255))
-        txt_dir = fonte.render("DIREITA ►", True, (255, 255, 255))
-        tela.blit(txt_esq, (btn_largura // 2 - txt_esq.get_width() // 2, ALTURA - btn_altura // 2 - 10))
-        tela.blit(txt_dir, (btn_largura + btn_largura // 2 - txt_dir.get_width() // 2, ALTURA - btn_altura // 2 - 10))
-
-        # HUD: Barra de Energia e Altura
-        desenhar_barra_energia(tela, energia, config.MAX_ENERGY, fonte)
-        
-        txt_altura = fonte.render(f"Altura: {int(altura_maxima_alcancada // 10)}m", True, (255, 220, 100))
-        tela.blit(txt_altura, (15, 45))
-
-        # Indicador de Voo ativo
-        if touro.voando:
-            txt_voo = fonte.render("⚡ VOO RED BULL! ⚡", True, (0, 220, 255))
-            tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 45))
-
-        # Tela de Game Over
-        if game_over:
+        # ----------------------------------------------------
+        # RENDERIZAR TELA DE ENTRADA DE NOME
+        # ----------------------------------------------------
+        if estado_atual == ESTADO_NOME:
             overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 160))
+            overlay.fill((10, 15, 30, 210))
+            tela.blit(overlay, (0, 0))
+
+            txt_titulo = fonte_grande.render("OVERTIME", True, (255, 215, 0))
+            txt_sub = fonte_media.render("INSIRA O NOME DO JOGADOR", True, (255, 255, 255))
+            
+            tela.blit(txt_titulo, (LARGURA // 2 - txt_titulo.get_width() // 2, ALTURA // 4))
+            tela.blit(txt_sub, (LARGURA // 2 - txt_sub.get_width() // 2, ALTURA // 4 + 45))
+
+            # Caixa de Input
+            box_rect = pygame.Rect(LARGURA // 2 - 120, ALTURA // 2 - 30, 240, 45)
+            pygame.draw.rect(tela, (255, 255, 255), box_rect, border_radius=8)
+            pygame.draw.rect(tela, (0, 102, 204), box_rect, width=3, border_radius=8)
+
+            txt_nome_display = nome_input + ("|" if cursor_visivel else "")
+            txt_nome_draw = fonte_media.render(txt_nome_display, True, (20, 20, 20))
+            tela.blit(txt_nome_draw, (box_rect.x + 15, box_rect.y + 12))
+
+            # Botão Iniciar Jogo
+            pygame.draw.rect(tela, (0, 150, 255), btn_iniciar_rect, border_radius=10)
+            pygame.draw.rect(tela, (255, 255, 255), btn_iniciar_rect, width=2, border_radius=10)
+            txt_btn_iniciar = fonte_media.render("INICIAR JOGO ▶", True, (255, 255, 255))
+            tela.blit(txt_btn_iniciar, (btn_iniciar_rect.centerx - txt_btn_iniciar.get_width() // 2, btn_iniciar_rect.centery - 10))
+
+        # ----------------------------------------------------
+        # RENDERIZAR JOGO
+        # ----------------------------------------------------
+        else:
+            plataformas.draw(tela)
+            itens.draw(tela)
+            touro.draw(tela)
+
+            # Botões Touch (Rodapé)
+            superficie_btn = pygame.Surface((LARGURA, btn_altura), pygame.SRCALPHA)
+            cor_esq = (255, 255, 255, 90) if touch_esq_pressionado else (255, 255, 255, 35)
+            cor_dir = (255, 255, 255, 90) if touch_dir_pressionado else (255, 255, 255, 35)
+            
+            pygame.draw.rect(superficie_btn, cor_esq, (0, 0, btn_largura - 2, btn_altura), border_radius=10)
+            pygame.draw.rect(superficie_btn, cor_dir, (btn_largura + 2, 0, btn_largura - 2, btn_altura), border_radius=10)
+            tela.blit(superficie_btn, (0, ALTURA - btn_altura))
+
+            txt_esq = fonte_media.render("◄ ESQUERDA", True, (255, 255, 255))
+            txt_dir = fonte_media.render("DIREITA ►", True, (255, 255, 255))
+            tela.blit(txt_esq, (btn_largura // 2 - txt_esq.get_width() // 2, ALTURA - btn_altura // 2 - 10))
+            tela.blit(txt_dir, (btn_largura + btn_largura // 2 - txt_dir.get_width() // 2, ALTURA - btn_altura // 2 - 10))
+
+            # HUD Topo
+            desenhar_barra_energia(tela, energia, config.MAX_ENERGY, fonte_pequena)
+            
+            txt_piloto = fonte_pequena.render(f"Piloto: {nome_input if nome_input else 'Piloto'}", True, (255, 255, 255))
+            tela.blit(txt_piloto, (15, 12))
+
+            txt_cronometro = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", True, (255, 220, 100))
+            tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
+
+            if touro.voando:
+                txt_voo = fonte_pequena.render("⚡ VOO RED BULL! ⚡", True, (0, 220, 255))
+                tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 36))
+
+        # ----------------------------------------------------
+        # RENDERIZAR GAME OVER
+        # ----------------------------------------------------
+        if estado_atual == ESTADO_GAMEOVER:
+            overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
             tela.blit(overlay, (0, 0))
 
             txt_go = fonte_grande.render("GAME OVER", True, (230, 40, 40))
-            txt_sub = fonte.render(motivo_game_over, True, (255, 200, 200))
-            txt_reiniciar = fonte.render("Pressione [R] para reiniciar", True, (255, 255, 255))
+            txt_sub = fonte_media.render(motivo_game_over, True, (255, 200, 200))
+            txt_r1 = fonte_media.render("[R] Jogar Novamente", True, (255, 255, 255))
+            txt_r2 = fonte_pequena.render("[N] Trocar de Jogador", True, (180, 200, 220))
             
             tela.blit(txt_go, (LARGURA // 2 - txt_go.get_width() // 2, ALTURA // 3))
             tela.blit(txt_sub, (LARGURA // 2 - txt_sub.get_width() // 2, ALTURA // 3 + 40))
-            tela.blit(txt_reiniciar, (LARGURA // 2 - txt_reiniciar.get_width() // 2, ALTURA // 3 + 75))
+            tela.blit(txt_r1, (LARGURA // 2 - txt_r1.get_width() // 2, ALTURA // 3 + 85))
+            tela.blit(txt_r2, (LARGURA // 2 - txt_r2.get_width() // 2, ALTURA // 3 + 115))
 
-        # Tela de Vitória
-        elif venceu:
+        # ----------------------------------------------------
+        # RENDERIZAR VITÓRIA & LEADERBOARD
+        # ----------------------------------------------------
+        elif estado_atual == ESTADO_VITORIA:
             overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 140))
+            overlay.fill((5, 15, 35, 220))
             tela.blit(overlay, (0, 0))
 
-            txt_vitoria = fonte_grande.render("VOCÊ CHEGOU AO TOPO!", True, (255, 215, 0))
-            txt_tempo = fonte.render(f"Tempo Final: {tempo_jogo:.2f}s", True, (255, 255, 255))
-            txt_reiniciar = fonte.render("Pressione [R] para jogar novamente", True, (200, 220, 255))
+            txt_vit = fonte_grande.render("🏆 VOCÊ CHEGOU AO TOPO! 🏆", True, (255, 215, 0))
+            txt_final = fonte_media.render(f"Piloto: {nome_input} | Tempo: {tempo_jogo:.2f}s", True, (255, 255, 255))
             
-            tela.blit(txt_vitoria, (LARGURA // 2 - txt_vitoria.get_width() // 2, ALTURA // 3))
-            tela.blit(txt_tempo, (LARGURA // 2 - txt_tempo.get_width() // 2, ALTURA // 3 + 40))
-            tela.blit(txt_reiniciar, (LARGURA // 2 - txt_reiniciar.get_width() // 2, ALTURA // 3 + 75))
+            tela.blit(txt_vit, (LARGURA // 2 - txt_vit.get_width() // 2, 40))
+            tela.blit(txt_final, (LARGURA // 2 - txt_final.get_width() // 2, 80))
 
-        # 10. Atualizar Display
+            # Tabela de Ranking Top 5
+            txt_rk_title = fonte_media.render("--- MELHORES TEMPOS ---", True, (0, 200, 255))
+            tela.blit(txt_rk_title, (LARGURA // 2 - txt_rk_title.get_width() // 2, 125))
+
+            y_rk = 160
+            for idx, item in enumerate(ranking_top5, start=1):
+                linha = f"{idx}. {item.get('nome', 'Piloto')} - {item.get('tempo', 0.0):.2f}s"
+                cor_linha = (255, 215, 0) if idx == 1 else (240, 240, 240)
+                txt_item = fonte_media.render(linha, True, cor_linha)
+                tela.blit(txt_item, (LARGURA // 2 - 100, y_rk))
+                y_rk += 30
+
+            txt_op1 = fonte_media.render("[R] Jogar Novamente", True, (255, 255, 255))
+            txt_op2 = fonte_pequena.render("[N] Trocar de Jogador", True, (180, 200, 220))
+            
+            tela.blit(txt_op1, (LARGURA // 2 - txt_op1.get_width() // 2, ALTURA - 100))
+            tela.blit(txt_op2, (LARGURA // 2 - txt_op2.get_width() // 2, ALTURA - 65))
+
         pygame.display.flip()
 
     pygame.quit()

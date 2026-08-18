@@ -1,18 +1,14 @@
+from numpy.lib import _polynomial_impl
 import pygame
 import os
 import config
+import random
 
 _latinha_image = None
 
 def _get_latinha_image():
-    global _latinha_image
-    if _latinha_image is None:
-        caminho = os.path.join("assets", "latinhas", "latinha-azul.png")
-        try:
-            _latinha_image = pygame.image.load(caminho).convert_alpha()
-        except Exception as e:
-            print(f"Aviso: Não foi possível carregar imagem da latinha ({caminho}): {e}")
-            _latinha_image = False
+    caminho_imagem = os.path.join("assets", "latinhas", f"lata-{random.randint(1, 3)}.png")
+    _latinha_image = pygame.image.load(caminho_imagem).convert_alpha()
     return _latinha_image
 
 
@@ -24,7 +20,7 @@ class RedBullItem(pygame.sprite.Sprite):
         
         img_base = _get_latinha_image()
         if img_base and img_base is not False:
-            self.image = pygame.transform.scale(img_base, (self.largura, self.altura))
+            self.image = pygame.transform.smoothscale(img_base, (self.largura, self.altura))
         else:
             # Fallback visual (retângulo azul com texto)
             self.image = pygame.Surface((self.largura, self.altura))

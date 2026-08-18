@@ -22,7 +22,7 @@ ENERGY_REFILL = 40.0       # Energia recuperada ao pegar o Red Bull
 
 # Power-Up de Voo (Dash de 1s ao pegar o Red Bull)
 FLY_DURATION = 0.3         # Duração em segundos
-FLY_SPEED = -10.0          # Impulso constante para cima durante o voo
+FLY_SPEED = -12.5          # Impulso constante para cima durante o voo
 
 # Cores (RGB)
 BG_COLOR = (25, 30, 45)
