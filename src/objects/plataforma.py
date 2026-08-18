@@ -7,7 +7,7 @@ import config
 def _get_platform_image(numero):
     caminho_imagem = os.path.join("assets", f"plataforma-{random.randint(1, 3)}.png")
     _platform_image = pygame.image.load(caminho_imagem).convert_alpha()
-    return _platform_image.set_alpha(170)
+    return _platform_image
 
 
 class Platform(pygame.sprite.Sprite):

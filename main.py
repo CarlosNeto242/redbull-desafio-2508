@@ -115,6 +115,7 @@ def main():
     fonte_pequena = pygame.font.SysFont("Arial", 13, bold=True)
     fonte_media = pygame.font.SysFont("Arial", 16, bold=True)
     fonte_grande = pygame.font.SysFont("Arial", 26, bold=True)
+    fonte_muito_grande = pygame.font.SysFont("Arial", 46, bold=True)
 
     fundo_img = carregar_fundo()
 
@@ -357,21 +358,14 @@ def main():
             superficie_btn = pygame.Surface((LARGURA, btn_altura), pygame.SRCALPHA)
             cor_esq = (255, 255, 255, 90) if touch_esq_pressionado else (255, 255, 255, 35)
             cor_dir = (255, 255, 255, 90) if touch_dir_pressionado else (255, 255, 255, 35)
-            
-            pygame.draw.rect(superficie_btn, cor_esq, (0, 0, btn_largura - 2, btn_altura), border_radius=10)
-            pygame.draw.rect(superficie_btn, cor_dir, (btn_largura + 2, 0, btn_largura - 2, btn_altura), border_radius=10)
-            tela.blit(superficie_btn, (0, ALTURA - btn_altura))
 
-            txt_esq = fonte_media.render("◄ ESQUERDA", True, (255, 255, 255))
-            txt_dir = fonte_media.render("DIREITA ►", True, (255, 255, 255))
+            txt_esq = fonte_muito_grande.render("◄", True, (255, 255, 255))
+            txt_dir = fonte_muito_grande.render("►", True, (255, 255, 255))
             tela.blit(txt_esq, (btn_largura // 2 - txt_esq.get_width() // 2, ALTURA - btn_altura // 2 - 10))
             tela.blit(txt_dir, (btn_largura + btn_largura // 2 - txt_dir.get_width() // 2, ALTURA - btn_altura // 2 - 10))
 
             # HUD Topo
             desenhar_barra_energia(tela, energia, config.MAX_ENERGY, fonte_pequena)
-            
-            txt_piloto = fonte_pequena.render(f"Piloto: {nome_input if nome_input else 'Piloto'}", True, (255, 255, 255))
-            tela.blit(txt_piloto, (15, 12))
 
             txt_cronometro = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", True, (255, 220, 100))
             tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
