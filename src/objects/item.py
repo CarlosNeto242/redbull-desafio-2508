@@ -1,4 +1,3 @@
-from numpy.lib import _polynomial_impl
 import pygame
 import os
 import config

@@ -1,4 +1,4 @@
-import typing_extensions
+import asyncio
 import pygame
 import sys
 import random
@@ -27,7 +27,7 @@ def carregar_sky():
         altura0 = int(fundo_img0.get_height() * (config.WIDTH / fundo_img0.get_width()))
         sky0_img = pygame.transform.smoothscale(fundo_img0, (largura0, altura0))
     except Exception as e:
-        print(f"Aviso: Não foi possível carregar {caminho0}: {e}")
+        print(f"Aviso: N\u00e3o foi poss\u00edvel carregar {caminho0}: {e}")
         
     try:
         fundo_img1 = pygame.image.load(caminho1).convert()
@@ -35,7 +35,7 @@ def carregar_sky():
         altura1 = int(fundo_img1.get_height() * (config.WIDTH / fundo_img1.get_width()))
         sky1_img = pygame.transform.smoothscale(fundo_img1, (largura1, altura1))
     except Exception as e:
-        print(f"Aviso: Não foi possível carregar {caminho1}: {e}")
+        print(f"Aviso: N\u00e3o foi poss\u00edvel carregar {caminho1}: {e}")
         
     return sky0_img, sky1_img
 
@@ -46,18 +46,18 @@ def carregar_tela_inicial():
         imagem = pygame.image.load(caminho).convert()
         return imagem
     except Exception as e:
-        print(f"Aviso: Não foi possível carregar a tela inicial ({caminho}): {e}")
+        print(f"Aviso: N\u00e3o foi poss\u00edvel carregar a tela inicial ({caminho}): {e}")
         return None
 
 
 def carregar_tela_vitoria():
-    """Carrega a arte pixelada da tela de vitória."""
+    """Carrega a arte pixelada da tela de vit\u00f3ria."""
     caminho = os.path.join("assets", "tela-vitoria.png")
     try:
         imagem = pygame.image.load(caminho).convert()
         return imagem
     except Exception as e:
-        print(f"Aviso: Não foi possível carregar a tela de vitória ({caminho}): {e}")
+        print(f"Aviso: N\u00e3o foi poss\u00edvel carregar a tela de vit\u00f3ria ({caminho}): {e}")
         return None
 
 
@@ -66,12 +66,12 @@ def carregar_tela_game_over():
     try:
         return pygame.image.load(caminho).convert()
     except Exception as e:
-        print(f"Aviso: Não foi possível carregar a tela de game over ({caminho}): {e}")
+        print(f"Aviso: N\u00e3o foi poss\u00edvel carregar a tela de game over ({caminho}): {e}")
         return None
 
 
 def gerar_nivel():
-    """Gera o grupo de plataformas e latinhas de Red Bull da base até o topo."""
+    """Gera o grupo de plataformas e latinhas de Red Bull da base at\u00e9 o topo."""
     plataformas = pygame.sprite.Group()
     itens = pygame.sprite.Group()
     
@@ -84,7 +84,7 @@ def gerar_nivel():
     )
     plataformas.add(plataforma_base)
 
-    # 2. Gerar plataformas e itens subindo até a altura total
+    # 2. Gerar plataformas e itens subindo at\u00e9 a altura total
     y_atual = config.HEIGHT - 60
     altura_alvo = config.HEIGHT - config.LEVEL_HEIGHT
 
@@ -118,7 +118,7 @@ def gerar_nivel():
     return plataformas, itens
 
 def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
-    """Desenha a barra de energia no estilo Pixel Retrô."""
+    """Desenha a barra de energia no estilo Pixel Retr\u00f4."""
     bar_width = config.WIDTH - 40
     bar_height = 24
     x = 20
@@ -165,7 +165,11 @@ def desenhar_barra_energia(tela, energia_atual, max_energia, fonte):
         brilho = (min(255, cor_fill[0]+60), min(255, cor_fill[1]+60), min(255, cor_fill[2]+60))
         pygame.draw.rect(tela, brilho, (bx, by, bw, 2))
 
-def main():
+    # Texto centralizado
+    txt_lbl = fonte.render(f"ENERGIA {int(pct * 100)}%", True, (255, 255, 255))
+    tela.blit(txt_lbl, (x + bar_width // 2 - txt_lbl.get_width() // 2, y + bar_height//2 - txt_lbl.get_height() + 50//2))
+
+async def main():
     pygame.init()
     pygame.font.init()
 
@@ -203,15 +207,15 @@ def main():
     bg_y_offset = 0.0
     frase_voo_atual = ""
 
-    # Botões Touch (Rodapé da tela durante o jogo)
+    # Bot\u00f5es Touch (Rodap\u00e9 da tela durante o jogo)
     btn_altura = 90
     btn_largura = LARGURA // 2
     btn_esquerda = pygame.Rect(0, ALTURA - btn_altura, btn_largura, btn_altura)
     btn_direita = pygame.Rect(btn_largura, ALTURA - btn_altura, btn_largura, btn_altura)
 
-    # Áreas clicáveis da arte da tela inicial.
+    # \u00c1reas clic\u00e1veis da arte da tela inicial.
     # Coordenadas baseadas na imagem tela-inicial.png (1024 x 1536).
-    # Elas são redimensionadas para qualquer resolução definida em config.py.
+    # Elas s\u00e3o redimensionadas para qualquer resolu\u00e7\u00e3o definida em config.py.
     def area_tela_inicial(x, y, w, h):
         if tela_inicial_img:
             sx = LARGURA / tela_inicial_img.get_width()
@@ -223,7 +227,7 @@ def main():
     box_nome_rect = area_tela_inicial(314, 694, 418, 128)
     btn_iniciar_rect = area_tela_inicial(311, 854, 424, 126)
 
-    # Áreas clicáveis da tela de vitória (base 1024x1536).
+    # \u00c1reas clic\u00e1veis da tela de vit\u00f3ria (base 1024x1536).
     def area_tela_vitoria(x, y, w, h):
         if tela_vitoria_img:
             sx = LARGURA / tela_vitoria_img.get_width()
@@ -232,11 +236,11 @@ def main():
             sx = sy = 1.0
         return pygame.Rect(int(x * sx), int(y * sy), int(w * sx), int(h * sy))
 
-    # Aproxima as áreas dos botões JOGAR NOVAMENTE e TROCAR DE JOGADOR da arte.
+    # Aproxima as \u00e1reas dos bot\u00f5es JOGAR NOVAMENTE e TROCAR DE JOGADOR da arte.
     btn_vitoria_repetir = area_tela_vitoria(300, 1175, 450, 105)
     btn_vitoria_trocar = area_tela_vitoria(300, 1272, 450, 105)
 
-    # Áreas clicáveis da tela de Game Over (base 1024x1536).
+    # \u00c1reas clic\u00e1veis da tela de Game Over (base 1024x1536).
     def area_tela_game_over(x, y, w, h):
         if tela_game_over_img:
             sx = LARGURA / tela_game_over_img.get_width()
@@ -307,7 +311,7 @@ def main():
                         pos_y = int(evento.y * ALTURA)
 
                     if box_nome_rect.collidepoint(pos_x, pos_y):
-                        # Mantém o foco visual no campo; a digitação continua por KEYDOWN.
+                        # Mant\u00e9m o foco visual no campo; a digita\u00e7\u00e3o continua por KEYDOWN.
                         cursor_visivel = True
                         cursor_timer = 0.0
                     elif btn_iniciar_rect.collidepoint(pos_x, pos_y):
@@ -345,7 +349,7 @@ def main():
                     touch_esq_pressionado = False
                     touch_dir_pressionado = False
 
-            # --- ESTADO 3 & 4: GAME OVER OU VITÓRIA ---
+            # --- ESTADO 3 & 4: GAME OVER OU VIT\u00d3RIA ---
             elif estado_atual in (ESTADO_GAMEOVER, ESTADO_VITORIA):
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_r:
@@ -379,7 +383,7 @@ def main():
                         elif btn_vitoria_repetir.collidepoint(pos_x, pos_y):
                             iniciar_nova_partida()
 
-        # --- Lógica por Estado ---
+        # --- L\u00f3gica por Estado ---
         if estado_atual == ESTADO_NOME:
             cursor_timer += dt
             if cursor_timer >= 0.5:
@@ -412,7 +416,7 @@ def main():
             # Atualiza touro
             touro.update()
 
-            # Câmera Vertical
+            # C\u00e2mera Vertical
             if touro.rect.y < ALTURA // 2:
                 scroll = ALTURA // 2 - touro.rect.y
                 touro.y += scroll
@@ -423,7 +427,7 @@ def main():
             plataformas.update(scroll)
             itens.update(scroll)
 
-            # Colisão com Plataformas
+            # Colis\u00e3o com Plataformas
             if touro.vy > 0 and not touro.voando:
                 for plat in plataformas:
                     if plat.rect.colliderect(touro.rect):
@@ -438,18 +442,18 @@ def main():
                                 ranking_top5 = carregar_top_ranking(5)
                             break
 
-            # Colisão com Red Bull
+            # Colis\u00e3o com Red Bull
             coletados = pygame.sprite.spritecollide(touro, itens, True)
             for item in coletados:
                 energia = min(config.MAX_ENERGY, energia + config.ENERGY_REFILL)
                 touro.ativar_voo()
-                voo_frases = ["ISSO NINGUÉM FAZ", "PULO E OUSADIA", "NÃO PARA DE SURPREENDER", "MENTE E CORPO SINCRONIZADA"]
+                voo_frases = ["ISSO NINGU\u00c9M FAZ", "PULO E OUSADIA", "N\u00c3O PARA DE SURPREENDER", "MENTE E CORPO SINCRONIZADA"]
                 frase_voo_atual = random.choice(voo_frases)
 
             # Queda
             if touro.rect.top > ALTURA:
                 estado_atual = ESTADO_GAMEOVER
-                motivo_game_over = "Você caiu!"
+                motivo_game_over = "Voc\u00ea caiu!"
 
         # --- Desenho na Tela ---
         if fundo_sky0 and fundo_sky1:
@@ -478,8 +482,8 @@ def main():
             else:
                 tela.fill((5, 10, 30))
 
-            # O texto, moldura e botão já fazem parte da arte.
-            # Aqui o Pygame desenha apenas o texto digitado dentro do retângulo.
+            # O texto, moldura e bot\u00e3o j\u00e1 fazem parte da arte.
+            # Aqui o Pygame desenha apenas o texto digitado dentro do ret\u00e2ngulo.
             txt_nome_display = nome_input + ("|" if cursor_visivel else "")
             if nome_input or cursor_visivel:
                 txt_nome_draw = fonte_media.render(txt_nome_display, True, (255, 255, 255))
@@ -500,28 +504,24 @@ def main():
             itens.draw(tela)
             touro.draw(tela)
 
-            # Botões Touch (Rodapé)
+            # Bot\u00f5es Touch (Rodap\u00e9)
             superficie_btn = pygame.Surface((LARGURA, btn_altura), pygame.SRCALPHA)
             cor_esq = (255, 255, 255, 90) if touch_esq_pressionado else (255, 255, 255, 35)
             cor_dir = (255, 255, 255, 90) if touch_dir_pressionado else (255, 255, 255, 35)
 
-            txt_esq = fonte_muito_grande.render("◄", True, (255, 255, 255))
-            txt_dir = fonte_muito_grande.render("►", True, (255, 255, 255))
+            txt_esq = fonte_muito_grande.render("\u25c4", True, (255, 255, 255))
+            txt_dir = fonte_muito_grande.render("\u25ba", True, (255, 255, 255))
             tela.blit(txt_esq, (btn_largura // 2 - txt_esq.get_width() // 2, ALTURA - btn_altura // 2 - 10))
             tela.blit(txt_dir, (btn_largura + btn_largura // 2 - txt_dir.get_width() // 2, ALTURA - btn_altura // 2 - 10))
 
             # HUD Topo
             desenhar_barra_energia(tela, energia, config.MAX_ENERGY, fonte_pequena)
 
-            # Renderiza sem antialiasing e escala em 2x para dar a mesma cara de pixel art
-            txt_crono_base = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", False, (255, 220, 100))
-            tela.blit(txt_crono_base, (LARGURA - txt_crono_base.get_width() - 15, 37))
+            txt_cronometro = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", True, (255, 220, 100))
+            tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
 
             if touro.voando and frase_voo_atual:
-                # Renderiza sem antialiasing (False) para ficar serrilhado, e em vermelho
-                txt_voo_base = fonte_media.render(frase_voo_atual, False, (255, 40, 40))
-                # Escala em 2x sem suavização para dar o efeito "pixel art"
-                txt_voo = pygame.transform.scale(txt_voo_base, (txt_voo_base.get_width() * 2, txt_voo_base.get_height() * 2))
+                txt_voo = fonte_grande.render(frase_voo_atual, True, (0, 220, 255))
                 tela.blit(txt_voo, (LARGURA // 2 - txt_voo.get_width() // 2, 400))
 
         # ----------------------------------------------------
@@ -537,23 +537,23 @@ def main():
                 tela.blit(txt_go, (LARGURA // 2 - txt_go.get_width() // 2, ALTURA // 3))
 
         # ----------------------------------------------------
-        # RENDERIZAR VITÓRIA & LEADERBOARD
+        # RENDERIZAR VIT\u00d3RIA & LEADERBOARD
         # ----------------------------------------------------
         elif estado_atual == ESTADO_VITORIA:
-            # A arte contém toda a interface visual: título, molduras, touro e botões.
+            # A arte cont\u00e9m toda a interface visual: t\u00edtulo, molduras, touro e bot\u00f5es.
             if tela_vitoria_img:
                 tela_vitoria = pygame.transform.scale(tela_vitoria_img, (LARGURA, ALTURA))
                 tela.blit(tela_vitoria, (0, 0))
             else:
                 tela.fill((5, 10, 30))
 
-            # O número do tempo fica propositalmente vazio na imagem e é escrito pelo Pygame.
+            # O n\u00famero do tempo fica propositalmente vazio na imagem e \u00e9 escrito pelo Pygame.
             txt_tempo = fonte_media.render(f"{tempo_jogo:.2f}s", True, (255, 215, 0))
             tempo_x = int(LARGURA * 0.56) - txt_tempo.get_width() // 2
             tempo_y = int(ALTURA * (530 / 1536))  # antes era 482
             tela.blit(txt_tempo, (tempo_x, tempo_y))
 
-            # A lista da arte também fica vazia; o Pygame preenche somente os nomes e tempos.
+            # A lista da arte tamb\u00e9m fica vazia; o Pygame preenche somente os nomes e tempos.
             y_rk = int(ALTURA * (660 / 1536))  # antes era 610
             passo_rk = int(ALTURA * (72 / 1536))
 
@@ -580,9 +580,10 @@ def main():
 
                 y_rk += passo_rk
         pygame.display.flip()
+        await asyncio.sleep(0)
 
     pygame.quit()
     sys.exit()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
