@@ -183,8 +183,8 @@ async def main():
     clock = pygame.time.Clock()
     fonte_pequena = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 13)
     fonte_media = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 11)
-    fonte_grande = pygame.font.SysFont("Arial", 26, bold=True)
-    fonte_muito_grande = pygame.font.SysFont("Arial", 46, bold=True)
+    fonte_grande = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 15)
+    fonte_muito_grande = pygame.font.Font("assets/fonts/PressStart2P-Regular.ttf", 50)
 
     fundo_sky0, fundo_sky1 = carregar_sky()
     tela_inicial_img = carregar_tela_inicial()
