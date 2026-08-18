@@ -661,7 +661,7 @@ async def main():
             desenhar_barra_energia(tela, energia, config.MAX_ENERGY, fonte_pequena)
 
             txt_cronometro = fonte_pequena.render(f"Tempo: {tempo_jogo:.2f}s", True, (255, 220, 100))
-            tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 12))
+            tela.blit(txt_cronometro, (LARGURA - txt_cronometro.get_width() - 15, 37))
 
             if touro.voando and frase_voo_atual:
                 txt_voo = fonte_grande.render(frase_voo_atual, True, (0, 220, 255))
